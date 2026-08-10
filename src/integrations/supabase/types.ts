@@ -14,7 +14,309 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      expense_shares: {
+        Row: {
+          created_at: string
+          expense_id: string
+          id: string
+          participant_id: string
+          percent: number
+        }
+        Insert: {
+          created_at?: string
+          expense_id: string
+          id?: string
+          participant_id: string
+          percent?: number
+        }
+        Update: {
+          created_at?: string
+          expense_id?: string
+          id?: string
+          participant_id?: string
+          percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_shares_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_shares_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          description: string
+          id: string
+          payer_id: string
+          plan_id: string
+          split_mode: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          description: string
+          id?: string
+          payer_id: string
+          plan_id: string
+          split_mode?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string
+          id?: string
+          payer_id?: string
+          plan_id?: string
+          split_mode?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memories: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          media_type: string
+          participant_id: string | null
+          plan_id: string
+          storage_path: string
+          uploader_name: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          media_type?: string
+          participant_id?: string | null
+          plan_id: string
+          storage_path: string
+          uploader_name: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          media_type?: string
+          participant_id?: string | null
+          plan_id?: string
+          storage_path?: string
+          uploader_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memories_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memories_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          participant_id: string | null
+          plan_id: string
+        }
+        Insert: {
+          author_name: string
+          body: string
+          created_at?: string
+          id?: string
+          participant_id?: string | null
+          plan_id: string
+        }
+        Update: {
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          participant_id?: string | null
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      participants: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          plan_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          plan_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "participants_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          created_at: string
+          destination: string
+          end_date: string | null
+          id: string
+          plan_type: string
+          share_code: string
+          start_date: string | null
+          subcategory: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          destination: string
+          end_date?: string | null
+          id?: string
+          plan_type: string
+          share_code: string
+          start_date?: string | null
+          subcategory?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          destination?: string
+          end_date?: string | null
+          id?: string
+          plan_type?: string
+          share_code?: string
+          start_date?: string | null
+          subcategory?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      settlements: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          from_participant_id: string
+          id: string
+          plan_id: string
+          to_participant_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          from_participant_id: string
+          id?: string
+          plan_id: string
+          to_participant_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          from_participant_id?: string
+          id?: string
+          plan_id?: string
+          to_participant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settlements_from_participant_id_fkey"
+            columns: ["from_participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlements_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlements_to_participant_id_fkey"
+            columns: ["to_participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
