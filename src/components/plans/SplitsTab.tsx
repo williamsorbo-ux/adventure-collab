@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
-import { ArrowRight, Check, Plus, Receipt, Trash2 } from "lucide-react";
+import { Check, Plus, Receipt, Scale, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ import {
   CURRENCIES,
   computeBalances,
   computeDebts,
+  computePersonTotals,
   fetchExpenses,
   fetchSettlements,
   formatMoney,
@@ -56,6 +57,8 @@ export function SplitsTab({ plan, participants, me }: Props) {
     queryKey: ["settlements", plan.id],
     queryFn: () => fetchSettlements(plan.id),
   });
+
+  const totals = useMemo(() => computePersonTotals(expenses), [expenses]);
 
   const debts = useMemo(
     () => computeDebts(computeBalances(expenses, settlements)),
