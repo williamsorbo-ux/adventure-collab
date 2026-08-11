@@ -8,6 +8,7 @@ import { ChatTab } from "@/components/plans/ChatTab";
 import { MemoriesTab } from "@/components/plans/MemoriesTab";
 import { OverviewTab } from "@/components/plans/OverviewTab";
 import { SplitsTab } from "@/components/plans/SplitsTab";
+import { TodosTab } from "@/components/plans/TodosTab";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -139,6 +140,7 @@ function PlanPage() {
             <TabsList className="mb-6 w-full justify-start overflow-x-auto">
               <TabsTrigger value="overview">Översikt</TabsTrigger>
               <TabsTrigger value="chat">Chatt</TabsTrigger>
+              <TabsTrigger value="todos">Att göra</TabsTrigger>
               <TabsTrigger value="splits">Kostnadsdelning</TabsTrigger>
               <TabsTrigger value="memories">Minnesbank</TabsTrigger>
             </TabsList>
@@ -147,6 +149,9 @@ function PlanPage() {
             </TabsContent>
             <TabsContent value="chat">
               <ChatTab plan={plan} participants={participants} me={me} />
+            </TabsContent>
+            <TabsContent value="todos">
+              <TodosTab plan={plan} participants={participants} me={me} />
             </TabsContent>
             <TabsContent value="splits">
               <SplitsTab plan={plan} participants={participants} me={me} />
