@@ -317,6 +317,83 @@ export type Database = {
           },
         ]
       }
+      todo_assignees: {
+        Row: {
+          created_at: string
+          id: string
+          participant_id: string
+          todo_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          participant_id: string
+          todo_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          participant_id?: string
+          todo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "todo_assignees_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "todo_assignees_todo_id_fkey"
+            columns: ["todo_id"]
+            isOneToOne: false
+            referencedRelation: "todos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      todos: {
+        Row: {
+          created_at: string
+          created_by_name: string | null
+          done: boolean
+          done_at: string | null
+          id: string
+          plan_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_name?: string | null
+          done?: boolean
+          done_at?: string | null
+          id?: string
+          plan_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_name?: string | null
+          done?: boolean
+          done_at?: string | null
+          id?: string
+          plan_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "todos_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
