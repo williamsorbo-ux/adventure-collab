@@ -99,7 +99,9 @@ export function SplitsTab({ plan, participants, me }: Props) {
     <div className="space-y-6">
       <section className="card-surface p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-display text-base font-semibold">Vem är skyldig vem</h2>
+          <h2 className="flex items-center gap-2 font-display text-base font-semibold">
+            <Scale className="size-4 text-accent" /> Betalningsbalans
+          </h2>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button variant="hero" size="sm" disabled={!me}>
@@ -118,6 +120,70 @@ export function SplitsTab({ plan, participants, me }: Props) {
           </Dialog>
         </div>
 
+        {Object.keys(totals).length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">
+            Lägg till en utgift för att se ställningen i realtid.
+          </p>
+        ) : (
+          Object.entries(totals).map(([currency, perPerson]) => (
+            <div key={currency} className="mt-4 space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {currency}
+              </p>
+              <ul className="space-y-2">
+                {participants
+                  .filter((p) => perPerson[p.id])
+                  .map((p) => {
+                    const t = perPerson[p.id]!;
+                    const positive = t.net > 0.01;
+                    const negative = t.net < -0.01;
+                    return (
+                      <li
+                        key={p.id}
+                        className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-muted/40 p-3"
+                      >
+                        <span
+                          className="flex size-8 items-center justify-center rounded-full text-[11px] font-bold text-primary-foreground"
+                          style={{ backgroundColor: p.color }}
+                        >
+                          {initials(p.name)}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-medium">
+                            {p.name}
+                            {p.id === me?.id && (
+                              <span className="ml-2 text-xs text-muted-foreground">(du)</span>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Betalat {formatMoney(t.paid, currency)} · Konsumerat{" "}
+                            {formatMoney(t.owed, currency)}
+                          </p>
+                        </div>
+                        <span
+                          className={`ml-auto font-display text-lg font-bold ${
+                            positive
+                              ? "text-accent"
+                              : negative
+                                ? "text-primary"
+                                : "text-muted-foreground"
+                          }`}
+                        >
+                          {positive ? "+" : ""}
+                          {formatMoney(t.net, currency)}
+                        </span>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </div>
+          ))
+        )}
+      </section>
+
+      <section className="card-surface p-5">
+        <h2 className="font-display text-base font-semibold">Föreslagen skuldeliminering</h2>
+
         {debts.length === 0 ? (
           <p className="mt-4 text-sm text-muted-foreground">
             Allt är jämnt – inga skulder just nu.
@@ -127,21 +193,22 @@ export function SplitsTab({ plan, participants, me }: Props) {
             {debts.map((d) => (
               <li
                 key={`${d.from}-${d.to}-${d.currency}`}
-                className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-muted/50 p-3"
+                className="space-y-3 rounded-xl border border-border bg-muted/50 p-3"
               >
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  <span
-                    className="flex size-7 items-center justify-center rounded-full text-[10px] font-bold text-primary-foreground"
-                    style={{ backgroundColor: colorOf(d.from) }}
-                  >
-                    {initials(nameOf(d.from))}
+                <p className="text-sm font-medium">
+                  <span className="inline-flex items-center gap-2">
+                    <span
+                      className="flex size-7 items-center justify-center rounded-full text-[10px] font-bold text-primary-foreground"
+                      style={{ backgroundColor: colorOf(d.from) }}
+                    >
+                      {initials(nameOf(d.from))}
+                    </span>
+                    {nameOf(d.from)} swishar {nameOf(d.to)}{" "}
+                    <Badge className="text-sm">{formatMoney(d.amount, d.currency)}</Badge>
                   </span>
-                  {nameOf(d.from)}
-                  <ArrowRight className="size-4 text-muted-foreground" />
-                  {nameOf(d.to)}
-                </span>
-                <Badge className="ml-auto text-sm">{formatMoney(d.amount, d.currency)}</Badge>
-                <div className="flex gap-2">
+                </p>
+                <div className="flex flex-wrap gap-2">
+
                   <Button variant="outline" size="sm" asChild>
                     <a
                       href={`https://app.revolut.com/`}
