@@ -339,3 +339,73 @@ export async function joinPlan(planId: string, name: string, colorIndex: number)
   if (error) throw error;
   return data as Participant;
 }
+
+/* ---------- todos ---------- */
+
+export interface TodoAssignee {
+  id: string;
+  todo_id: string;
+  participant_id: string;
+}
+
+export interface Todo {
+  id: string;
+  plan_id: string;
+  title: string;
+  done: boolean;
+  done_at: string | null;
+  created_by_name: string | null;
+  created_at: string;
+  todo_assignees: TodoAssignee[];
+}
+
+export async function fetchTodos(planId: string) {
+  const { data, error } = await supabase
+    .from("todos")
+    .select("*, todo_assignees(*)")
+    .eq("plan_id", planId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as unknown as Todo[];
+}
+
+/* ---------- per person totals ---------- */
+
+export interface PersonTotals {
+  paid: number;
+  owed: number;
+  net: number;
+}
+
+/** Totalt betalat / konsumerat / netto per valuta och person (exkl. regleringar). */
+export function computePersonTotals(
+  expenses: Expense[],
+): Record<string, Record<string, PersonTotals>> {
+  const out: Record<string, Record<string, PersonTotals>> = {};
+  const ensure = (currency: string, id: string) => {
+    out[currency] ??= {};
+    out[currency]![id] ??= { paid: 0, owed: 0, net: 0 };
+    return out[currency]![id]!;
+  };
+
+  for (const e of expenses) {
+    const shares = e.expense_shares ?? [];
+    if (shares.length === 0) continue;
+    ensure(e.currency, e.payer_id).paid += Number(e.amount);
+    if (e.split_mode === "percent") {
+      const total = shares.reduce((s, sh) => s + Number(sh.percent), 0) || 100;
+      for (const sh of shares) {
+        ensure(e.currency, sh.participant_id).owed +=
+          (Number(e.amount) * Number(sh.percent)) / total;
+      }
+    } else {
+      const each = Number(e.amount) / shares.length;
+      for (const sh of shares) ensure(e.currency, sh.participant_id).owed += each;
+    }
+  }
+
+  for (const perPerson of Object.values(out)) {
+    for (const t of Object.values(perPerson)) t.net = t.paid - t.owed;
+  }
+  return out;
+}
