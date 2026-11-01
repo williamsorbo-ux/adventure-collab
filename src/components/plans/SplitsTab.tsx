@@ -66,7 +66,7 @@ export function SplitsTab({ plan, participants, me }: Props) {
   );
 
   const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? "Okänd";
-  const colorOf = (id: string) => participants.find((p) => p.id === id)?.color ?? "#3366cc";
+  const colorOf = (id: string) => participants.find((p) => p.id === id)?.color ?? "#2F5D50";
 
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: ["expenses", plan.id] });

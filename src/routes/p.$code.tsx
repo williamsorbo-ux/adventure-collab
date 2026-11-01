@@ -1,19 +1,18 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Sparkles } from "lucide-react";
+import { Camera, CheckSquare, Loader2, MessageCircle, Sparkles, Wallet, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 
 import { ChatTab } from "@/components/plans/ChatTab";
 import { MemoriesTab } from "@/components/plans/MemoriesTab";
-import { OverviewTab } from "@/components/plans/OverviewTab";
+import { OverviewTab, type PlanTab } from "@/components/plans/OverviewTab";
 import { SplitsTab } from "@/components/plans/SplitsTab";
 import { TodosTab } from "@/components/plans/TodosTab";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   PLAN_TYPES,
   TRIP_SUBCATEGORIES,
@@ -53,6 +52,7 @@ function PlanPage() {
   const queryClient = useQueryClient();
   const [meId, setMeId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [tab, setTab] = useState<PlanTab>("overview");
 
   const planQuery = useQuery({
     queryKey: ["plan", code],
@@ -107,25 +107,30 @@ function PlanPage() {
     PLAN_TYPES.find((t) => t.id === plan.plan_type)?.label ??
     "Plan";
 
+  const navItems: { id: PlanTab; label: string; Icon: typeof Wallet }[] = [
+    { id: "overview", label: "Översikt", Icon: LayoutDashboard },
+    { id: "splits", label: "Pengar", Icon: Wallet },
+    { id: "todos", label: "Att göra", Icon: CheckSquare },
+    { id: "chat", label: "Chatt", Icon: MessageCircle },
+    { id: "memories", label: "Bilder", Icon: Camera },
+  ];
+  const joined = !(hydrated && !me);
+
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen pb-24">
       <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-4">
+        <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Link to="/" className="font-display text-lg font-bold text-primary">
             Plans
           </Link>
           <span className="text-border">/</span>
-          <div className="min-w-0">
-            <h1 className="truncate font-display text-lg font-bold">{plan.title}</h1>
-          </div>
-          <Badge variant="secondary" className="ml-auto">
-            {typeLabel}
-          </Badge>
+          <h1 className="min-w-0 flex-1 truncate font-display text-lg font-bold">{plan.title}</h1>
+          <Badge variant="secondary">{typeLabel}</Badge>
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-4 py-6">
-        {hydrated && !me ? (
+      <div className="mx-auto max-w-2xl px-4 py-6">
+        {!joined ? (
           <JoinCard
             plan={plan}
             participantCount={participants.length}
@@ -136,32 +141,47 @@ function PlanPage() {
             }}
           />
         ) : (
-          <Tabs defaultValue="overview">
-            <TabsList className="mb-6 w-full justify-start overflow-x-auto">
-              <TabsTrigger value="overview">Översikt</TabsTrigger>
-              <TabsTrigger value="chat">Chatt</TabsTrigger>
-              <TabsTrigger value="todos">Att göra</TabsTrigger>
-              <TabsTrigger value="splits">Kostnadsdelning</TabsTrigger>
-              <TabsTrigger value="memories">Minnesbank</TabsTrigger>
-            </TabsList>
-            <TabsContent value="overview">
-              <OverviewTab plan={plan} participants={participants} meId={meId} />
-            </TabsContent>
-            <TabsContent value="chat">
-              <ChatTab plan={plan} participants={participants} me={me} />
-            </TabsContent>
-            <TabsContent value="todos">
-              <TodosTab plan={plan} participants={participants} me={me} />
-            </TabsContent>
-            <TabsContent value="splits">
-              <SplitsTab plan={plan} participants={participants} me={me} />
-            </TabsContent>
-            <TabsContent value="memories">
-              <MemoriesTab plan={plan} me={me} />
-            </TabsContent>
-          </Tabs>
+          <>
+            {tab === "overview" && (
+              <OverviewTab
+                plan={plan}
+                participants={participants}
+                meId={meId}
+                onNavigate={setTab}
+              />
+            )}
+            {tab === "chat" && <ChatTab plan={plan} participants={participants} me={me} />}
+            {tab === "todos" && <TodosTab plan={plan} participants={participants} me={me} />}
+            {tab === "splits" && <SplitsTab plan={plan} participants={participants} me={me} />}
+            {tab === "memories" && <MemoriesTab plan={plan} me={me} />}
+          </>
         )}
       </div>
+
+      {joined && (
+        <nav
+          aria-label="Planens delar"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]"
+        >
+          <ul className="mx-auto flex max-w-2xl">
+            {navItems.map(({ id, label, Icon }) => (
+              <li key={id} className="flex-1">
+                <button
+                  type="button"
+                  onClick={() => setTab(id)}
+                  aria-current={tab === id ? "page" : undefined}
+                  className={`flex min-h-16 w-full flex-col items-center justify-center gap-0.5 text-xs ${
+                    tab === id ? "font-bold text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  <Icon className="size-6" />
+                  {label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
     </main>
   );
 }

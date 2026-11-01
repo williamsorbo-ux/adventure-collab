@@ -52,7 +52,7 @@ export function TodosTab({ plan, participants, me }: Props) {
   }, [plan.id]);
 
   const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? "Okänd";
-  const colorOf = (id: string) => participants.find((p) => p.id === id)?.color ?? "#3366cc";
+  const colorOf = (id: string) => participants.find((p) => p.id === id)?.color ?? "#2F5D50";
 
   async function addTodo() {
     if (title.trim().length < 2) return;

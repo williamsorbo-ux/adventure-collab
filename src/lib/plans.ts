@@ -19,14 +19,14 @@ export const TRIP_SUBCATEGORIES = [
 ] as const;
 
 export const PARTICIPANT_COLORS = [
-  "#cc3300",
-  "#3366cc",
-  "#16a34a",
-  "#d97706",
-  "#7c3aed",
-  "#0891b2",
-  "#db2777",
-  "#65a30d",
+  "#2F5D50",
+  "#D9825B",
+  "#6B8F71",
+  "#C9A227",
+  "#8C5E58",
+  "#4F7CAC",
+  "#B5576B",
+  "#7A8450",
 ];
 
 export interface Plan {
