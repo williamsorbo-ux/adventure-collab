@@ -53,6 +53,7 @@ function PlanPage() {
   const [meId, setMeId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [tab, setTab] = useState<PlanTab>("overview");
+  const [startExpense, setStartExpense] = useState(false);
 
   const planQuery = useQuery({
     queryKey: ["plan", code],
@@ -147,12 +148,22 @@ function PlanPage() {
                 plan={plan}
                 participants={participants}
                 meId={meId}
-                onNavigate={setTab}
+                onNavigate={(t, opts) => {
+                  setStartExpense(!!opts?.newExpense);
+                  setTab(t);
+                }}
               />
             )}
             {tab === "chat" && <ChatTab plan={plan} participants={participants} me={me} />}
             {tab === "todos" && <TodosTab plan={plan} participants={participants} me={me} />}
-            {tab === "splits" && <SplitsTab plan={plan} participants={participants} me={me} />}
+            {tab === "splits" && (
+              <SplitsTab
+                plan={plan}
+                participants={participants}
+                me={me}
+                startOpen={startExpense}
+              />
+            )}
             {tab === "memories" && <MemoriesTab plan={plan} me={me} />}
           </>
         )}
@@ -168,7 +179,10 @@ function PlanPage() {
               <li key={id} className="flex-1">
                 <button
                   type="button"
-                  onClick={() => setTab(id)}
+                  onClick={() => {
+                    setStartExpense(false);
+                    setTab(id);
+                  }}
                   aria-current={tab === id ? "page" : undefined}
                   className={`flex min-h-16 w-full flex-col items-center justify-center gap-0.5 text-xs ${
                     tab === id ? "font-bold text-primary" : "text-muted-foreground"
