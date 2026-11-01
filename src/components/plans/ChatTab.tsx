@@ -69,7 +69,7 @@ export function ChatTab({ plan, participants, me }: Props) {
   }
 
   const colorOf = (participantId: string | null) =>
-    participants.find((p) => p.id === participantId)?.color ?? "#3366cc";
+    participants.find((p) => p.id === participantId)?.color ?? "#2F5D50";
 
   return (
     <div className="card-surface flex h-[60vh] min-h-[420px] flex-col overflow-hidden">
