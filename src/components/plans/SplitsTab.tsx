@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
-import { Check, Plus, Receipt, Scale, Trash2 } from "lucide-react";
+import { Check, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -43,11 +42,12 @@ interface Props {
   plan: Plan;
   participants: Participant[];
   me: Participant | null;
+  startOpen?: boolean;
 }
 
-export function SplitsTab({ plan, participants, me }: Props) {
+export function SplitsTab({ plan, participants, me, startOpen = false }: Props) {
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
 
   const { data: expenses = [] } = useQuery({
     queryKey: ["expenses", plan.id],
@@ -98,181 +98,232 @@ export function SplitsTab({ plan, participants, me }: Props) {
     refresh();
   }
 
+  const myId = me?.id ?? null;
+  const currencies = Object.keys(totals);
+  const mainCurrency = currencies.includes("SEK") ? "SEK" : (currencies[0] ?? "SEK");
+  const balances = computeBalances(expenses, settlements);
+  const myNet = myId ? (balances[mainCurrency]?.[myId] ?? 0) : 0;
+  const myTotals = myId ? totals[mainCurrency]?.[myId] : undefined;
+  const planTotal = expenses
+    .filter((e) => e.currency === mainCurrency)
+    .reduce((sum, e) => sum + Number(e.amount), 0);
+  const sortedDebts = [...debts].sort(
+    (x, y) => Number(y.from === myId || y.to === myId) - Number(x.from === myId || x.to === myId),
+  );
+  const heading = "font-display text-2xl font-semibold";
+  const card = "rounded-2xl border border-border bg-card";
+
   return (
     <div className="space-y-6">
-      <section className="card-surface p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 font-display text-base font-semibold">
-            <Scale className="size-4 text-accent" /> Betalningsbalans
-          </h2>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button variant="hero" size="sm" disabled={!me}>
-                <Plus /> Ny utgift
-              </Button>
-            </DialogTrigger>
-            <ExpenseDialog
-              plan={plan}
-              participants={participants}
-              me={me}
-              onDone={() => {
-                setOpen(false);
-                refresh();
-              }}
-            />
-          </Dialog>
-        </div>
-
-        {Object.keys(totals).length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">
-            Lägg till en utgift för att se ställningen i realtid.
-          </p>
+      <section aria-label="Ditt saldo" className={`${card} p-5 shadow-lg`}>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Ditt saldo
+        </p>
+        {expenses.length === 0 ? (
+          <p className="mt-2 font-display text-3xl font-semibold text-primary">Inga utgifter än</p>
+        ) : Math.abs(myNet) < 0.5 ? (
+          <p className="mt-2 font-display text-5xl font-semibold text-primary">Skuldfri</p>
         ) : (
-          Object.entries(totals).map(([currency, perPerson]) => (
-            <div key={currency} className="mt-4 space-y-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {currency}
-              </p>
-              <ul className="space-y-2">
-                {participants
-                  .filter((p) => perPerson[p.id])
-                  .map((p) => {
-                    const t = perPerson[p.id]!;
-                    const positive = t.net > 0.01;
-                    const negative = t.net < -0.01;
-                    return (
-                      <li
-                        key={p.id}
-                        className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-muted/40 p-3"
-                      >
-                        <span
-                          className="flex size-8 items-center justify-center rounded-full text-[11px] font-bold text-primary-foreground"
-                          style={{ backgroundColor: p.color }}
-                        >
-                          {initials(p.name)}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="font-medium">
-                            {p.name}
-                            {p.id === me?.id && (
-                              <span className="ml-2 text-xs text-muted-foreground">(du)</span>
-                            )}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Betalat {formatMoney(t.paid, currency)} · Konsumerat{" "}
-                            {formatMoney(t.owed, currency)}
-                          </p>
-                        </div>
-                        <span
-                          className={`ml-auto font-display text-lg font-bold ${
-                            positive
-                              ? "text-accent"
-                              : negative
-                                ? "text-primary"
-                                : "text-muted-foreground"
-                          }`}
-                        >
-                          {positive ? "+" : ""}
-                          {formatMoney(t.net, currency)}
-                        </span>
-                      </li>
-                    );
-                  })}
-              </ul>
-            </div>
-          ))
+          <p className="mt-1 flex items-baseline gap-2">
+            <span
+              className={`font-display text-6xl font-semibold leading-none tracking-tight ${
+                myNet > 0 ? "text-primary" : "text-accent-foreground"
+              }`}
+            >
+              {formatMoney(Math.abs(myNet), mainCurrency)}
+            </span>
+            <span className="text-base text-muted-foreground">
+              {myNet > 0 ? "att få" : "att betala"}
+            </span>
+          </p>
         )}
+        {myTotals && (
+          <p className="mt-2 flex flex-wrap gap-x-4 text-sm text-muted-foreground">
+            <span>Du har lagt ut {formatMoney(myTotals.paid, mainCurrency)}</span>
+            <span>Din andel {formatMoney(myTotals.owed, mainCurrency)}</span>
+          </p>
+        )}
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <button
+              type="button"
+              disabled={!me}
+              className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-base font-bold text-primary-foreground disabled:opacity-50"
+            >
+              <Plus className="size-5" /> Lägg till utgift
+            </button>
+          </DialogTrigger>
+          <ExpenseDialog
+            plan={plan}
+            participants={participants}
+            me={me}
+            onDone={() => {
+              setOpen(false);
+              refresh();
+            }}
+          />
+        </Dialog>
       </section>
 
-      <section className="card-surface p-5">
-        <h2 className="font-display text-base font-semibold">Föreslagen skuldeliminering</h2>
-
-        {debts.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">
-            Allt är jämnt – inga skulder just nu.
+      <section aria-label="Gör upp">
+        <h2 className={`${heading} px-1`}>Gör upp</h2>
+        {sortedDebts.length === 0 ? (
+          <p className={`${card} mt-2 p-4 text-sm text-muted-foreground`}>
+            Allt är jämnt, inga skulder just nu.
           </p>
         ) : (
-          <ul className="mt-4 space-y-3">
-            {debts.map((d) => (
-              <li
-                key={`${d.from}-${d.to}-${d.currency}`}
-                className="space-y-3 rounded-xl border border-border bg-muted/50 p-3"
-              >
-                <p className="text-sm font-medium">
-                  <span className="inline-flex items-center gap-2">
+          <ul className="mt-2 space-y-3">
+            {sortedDebts.map((d) => {
+              const mine = d.from === myId;
+              const toMe = d.to === myId;
+              return (
+                <li
+                  key={`${d.from}-${d.to}-${d.currency}`}
+                  className={`${card} space-y-3 p-4 ${mine ? "border-primary" : ""}`}
+                >
+                  <div className="flex items-center gap-3">
                     <span
-                      className="flex size-7 items-center justify-center rounded-full text-[10px] font-bold text-primary-foreground"
-                      style={{ backgroundColor: colorOf(d.from) }}
+                      className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-primary-foreground"
+                      style={{ backgroundColor: colorOf(mine ? d.to : d.from) }}
                     >
-                      {initials(nameOf(d.from))}
+                      {initials(nameOf(mine ? d.to : d.from))}
                     </span>
-                    {nameOf(d.from)} swishar {nameOf(d.to)}{" "}
-                    <Badge className="text-sm">{formatMoney(d.amount, d.currency)}</Badge>
-                  </span>
-                </p>
-                <div className="flex flex-wrap gap-2">
-
-                  <Button variant="outline" size="sm" asChild>
-                    <a
-                      href={`https://app.revolut.com/`}
-                      target="_blank"
-                      rel="noreferrer noopener"
+                    <p className="min-w-0 flex-1">
+                      {mine ? (
+                        <>
+                          Du ska Swisha <span className="font-semibold">{nameOf(d.to)}</span>
+                        </>
+                      ) : toMe ? (
+                        <>
+                          <span className="font-semibold">{nameOf(d.from)}</span> ska Swisha dig
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-semibold">{nameOf(d.from)}</span> ska Swisha{" "}
+                          {nameOf(d.to)}
+                        </>
+                      )}
+                    </p>
+                    <span className="font-display text-xl font-semibold">
+                      {formatMoney(d.amount, d.currency)}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {mine && (
+                      <a
+                        href={`https://app.swish.nu/1/p/sw/?sw=&amt=${d.amount}&cur=${d.currency}&msg=${encodeURIComponent(plan.title)}`}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="flex min-h-11 items-center rounded-xl bg-primary px-4 font-semibold text-primary-foreground"
+                      >
+                        Öppna Swish
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => void markPaid(d.from, d.to, d.amount, d.currency)}
+                      className="flex min-h-11 items-center gap-2 rounded-xl border-2 border-border px-4 font-semibold"
                     >
-                      Revolut
-                    </a>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <a
-                      href={`https://app.swish.nu/1/p/sw/?sw=&amt=${d.amount}&cur=${d.currency}&msg=${encodeURIComponent(plan.title)}`}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                    >
-                      Swish
-                    </a>
-                  </Button>
-                  <Button
-                    variant="accent"
-                    size="sm"
-                    onClick={() => void markPaid(d.from, d.to, d.amount, d.currency)}
-                  >
-                    <Check /> Betald
-                  </Button>
-                </div>
-              </li>
-            ))}
+                      <Check className="size-4" /> Markera betald
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
 
-      <section className="card-surface p-5">
-        <h2 className="flex items-center gap-2 font-display text-base font-semibold">
-          <Receipt className="size-4 text-accent" /> Utgifter
-        </h2>
+      {currencies.length > 0 && (
+        <section aria-label="Gruppen">
+          <h2 className={`${heading} px-1`}>Gruppen</h2>
+          {currencies.map((currency) => (
+            <ul key={currency} className={`${card} mt-2 divide-y divide-border`}>
+              {participants
+                .filter((p) => totals[currency]?.[p.id])
+                .map((p) => {
+                  const t = totals[currency]![p.id]!;
+                  const net = balances[currency]?.[p.id] ?? 0;
+                  return (
+                    <li key={p.id} className="flex min-h-14 items-center gap-3 px-4 py-3">
+                      <span
+                        className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-primary-foreground"
+                        style={{ backgroundColor: p.color }}
+                      >
+                        {initials(p.name)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold">
+                          {p.name}
+                          {p.id === myId && " (du)"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Lagt ut {formatMoney(t.paid, currency)} · andel{" "}
+                          {formatMoney(t.owed, currency)}
+                        </p>
+                      </div>
+                      <span
+                        className={`font-display text-lg font-semibold ${
+                          net > 0.5
+                            ? "text-primary"
+                            : net < -0.5
+                              ? "text-accent-foreground"
+                              : "text-muted-foreground"
+                        }`}
+                      >
+                        {net > 0.5 ? "+" : ""}
+                        {formatMoney(net, currency)}
+                      </span>
+                    </li>
+                  );
+                })}
+            </ul>
+          ))}
+        </section>
+      )}
+
+      <section aria-label="Utgifter">
+        <div className="flex items-baseline justify-between px-1">
+          <h2 className={heading}>Utgifter</h2>
+          {expenses.length > 0 && (
+            <span className="text-sm text-muted-foreground">
+              Totalt {formatMoney(planTotal, mainCurrency)}
+            </span>
+          )}
+        </div>
         {expenses.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">Inga utgifter registrerade än.</p>
+          <p className={`${card} mt-2 p-4 text-sm text-muted-foreground`}>
+            Inga utgifter registrerade än.
+          </p>
         ) : (
-          <ul className="mt-4 divide-y divide-border">
+          <ul className={`${card} mt-2 divide-y divide-border`}>
             {expenses.map((e) => (
-              <li key={e.id} className="flex items-center gap-3 py-3">
+              <li key={e.id} className="flex min-h-14 items-center gap-3 px-4 py-3">
+                <span
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-primary-foreground"
+                  style={{ backgroundColor: colorOf(e.payer_id) }}
+                >
+                  {initials(nameOf(e.payer_id))}
+                </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{e.description}</p>
+                  <p className="truncate font-semibold">{e.description}</p>
                   <p className="text-xs text-muted-foreground">
                     {nameOf(e.payer_id)} betalade ·{" "}
                     {e.split_mode === "percent" ? "procentuellt" : "delat lika"} ·{" "}
                     {format(parseISO(e.created_at), "d MMM", { locale: sv })}
                   </p>
                 </div>
-                <span className="font-display font-semibold">
+                <span className="font-display text-xl font-semibold">
                   {formatMoney(Number(e.amount), e.currency)}
                 </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <button
+                  type="button"
                   aria-label="Ta bort utgift"
                   onClick={() => void removeExpense(e.id)}
+                  className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground"
                 >
-                  <Trash2 className="text-muted-foreground" />
-                </Button>
+                  <Trash2 className="size-5" />
+                </button>
               </li>
             ))}
           </ul>
@@ -287,7 +338,7 @@ function ExpenseDialog({
   participants,
   me,
   onDone,
-}: Props & { onDone: () => void }) {
+}: Omit<Props, "startOpen"> & { onDone: () => void }) {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("SEK");
   const [description, setDescription] = useState("");

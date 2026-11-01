@@ -28,7 +28,7 @@ interface Props {
   plan: Plan;
   participants: Participant[];
   meId: string | null;
-  onNavigate: (tab: PlanTab) => void;
+  onNavigate: (tab: PlanTab, opts?: { newExpense?: boolean }) => void;
 }
 
 const card = "rounded-2xl border border-border bg-card";
@@ -107,7 +107,7 @@ export function OverviewTab({ plan, participants, meId, onNavigate }: Props) {
   return (
     <div className="-mx-4 -mt-6 space-y-5 pb-4">
       {/* compact header */}
-      <div className="bg-primary px-5 pb-16 pt-5 text-primary-foreground">
+      <div className="rounded-b-[2rem] bg-primary px-5 pb-16 pt-5 text-primary-foreground">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="font-display text-3xl font-semibold leading-tight">{plan.destination}</h2>
@@ -184,7 +184,7 @@ export function OverviewTab({ plan, participants, meId, onNavigate }: Props) {
         <div className="mt-4 flex gap-2">
           <button
             type="button"
-            onClick={() => onNavigate("splits")}
+            onClick={() => onNavigate("splits", { newExpense: true })}
             className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-base font-bold text-primary-foreground"
           >
             <Plus className="size-5" /> Lägg till utgift
